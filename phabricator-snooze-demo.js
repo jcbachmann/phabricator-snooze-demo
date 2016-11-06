@@ -115,12 +115,12 @@
 
     // Check whether task id can be found in link
     function isTask(possibleTask) {
-        return possibleTask.href.match(/\/(T[0-9]+|r[a-zA-Z0-9]+)$/);
+        return possibleTask.href.match(/\/([TD][0-9]+|r[a-zA-Z0-9]+)$/);
     }
 
     // Match link and extract task id - e.g. T123
     function getTaskId(task) {
-        return task.href.match(/\/(T[0-9]+|r[a-zA-Z0-9]+)$/)[1];
+        return task.href.match(/\/([TD][0-9]+|r[a-zA-Z0-9]+)$/)[1];
     }
 
     // Claim up the hierarchy until a list item is reached and declare this as the task block
