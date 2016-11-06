@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Phabricator Snooze Demo
 // @namespace    https://www.jcbachmann.com
-// @version      1.0
+// @version      1.1
 // @description  Enables snoozing of tasks and audits on Phabricator dashboard using local Browser storage
 // @author       J&C Bachmann GmbH
 // @match        https://secure.phabricator.com/
