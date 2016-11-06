@@ -336,6 +336,51 @@
             updateAllTaskBlocks();
         };
 
+        // Export
+        var exportDownload = document.createElement('A');
+        exportDownload.style.display = 'none';
+        exportDownload.setAttribute('download', 'phabricator-snoozed.json');
+        document.body.appendChild(exportDownload);
+
+        var exportButton = document.createElement('A');
+        exportButton.classList.add('alert-notifications');
+        exportButton.innerHTML = '<span class="phabricator-main-menu-alert-icon phui-icon-view phui-font-fa fa-download" data-sigil="menu-icon">';
+        document.getElementsByClassName('phabricator-main-menu-alerts')[0].appendChild(exportButton);
+        exportButton.onclick = function(event) {
+            exportDownload.setAttribute('href', 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(localStorage)));
+            exportDownload.click();
+        };
+
+        // Import
+        var importUpload = document.createElement('INPUT');
+        importUpload.type = 'file';
+        importUpload.style.display = 'none';
+        importUpload.addEventListener('change', function(e) {
+            var file = e.target.files[0];
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var data = JSON.parse(e.target.result);
+                    for (var key in data) {
+                        if (key.match(/^(T[0-9]+|r[a-zA-Z0-9]+)$/)) {
+                            localStorage.setItem(key, data[key]);
+                        }
+                    }
+                    location.reload();
+                };
+                reader.readAsText(file);
+            }
+        });
+        document.body.appendChild(importUpload);
+
+        var importButton = document.createElement('A');
+        importButton.classList.add('alert-notifications');
+        importButton.innerHTML = '<span class="phabricator-main-menu-alert-icon phui-icon-view phui-font-fa fa-upload" data-sigil="menu-icon">';
+        document.getElementsByClassName('phabricator-main-menu-alerts')[0].appendChild(importButton);
+        importButton.onclick = function(event) {
+            importUpload.click();
+        };
+
         return true;
     }
 
