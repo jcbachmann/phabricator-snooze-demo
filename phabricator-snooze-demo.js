@@ -2,9 +2,9 @@
 // @name         Phabricator Snooze Demo
 // @namespace    https://www.jcbachmann.com
 // @version      1.1
-// @description  Enables snoozing of tasks and audits on Phabricator dashboard using local Browser storage
+// @description  Enables snoozing of items on Phabricator interface using local Browser storage
 // @author       J&C Bachmann GmbH
-// @match        https://secure.phabricator.com/
+// @match        https://secure.phabricator.com/*
 // @grant        none
 // ==/UserScript==
 
@@ -17,10 +17,10 @@
 
     // State variables
     var snoozeOverrideShow = false;
-    var tasks = new Map();
+    var items = new Map();
     var snoozedCount = 0;
 
-    class Task {
+    class Item {
         constructor(id) {
             this.id = id;
             this.blocks = Array();
@@ -30,13 +30,13 @@
             if (isNaN(date) === false) {
                 date = new Date(date);
             } else {
-                // Task not snoozed - set to last midnight
+                // Item not snoozed - set to last midnight
                 date = new Date();
             }
             date.setHours(0, 0, 0, 0);
             this.setDate(date);
 
-            debug('(' + this.id + ') new task');
+            debug('(' + this.id + ') new item');
         }
 
         setDate(date) {
@@ -46,7 +46,7 @@
 
             this.date = date;
 
-            // Only store snoozed task dates
+            // Only store snoozed item dates
             if (date > new Date()) {
                 // Date in future -> snoozed
                 localStorage.setItem(this.id, date.toISOString());
@@ -54,7 +54,7 @@
 
                 if (!this.snoozed) {
                     snoozedCount++;
-                    updateTaskCounter();
+                    updateItemCounter();
                 }
 
                 this.snoozed = true;
@@ -67,7 +67,7 @@
 
                 if (this.snoozed) {
                     snoozedCount--;
-                    updateTaskCounter();
+                    updateItemCounter();
                 }
 
                 this.snoozed = false;
@@ -84,14 +84,14 @@
         updateToBlocks() {
             var self = this;
             this.blocks.forEach(function(block) {
-                updateTaskBlock(self, block);
+                updateItemBlock(self, block);
             });
         }
 
         updateFromBlocks() {
             var self = this;
             this.blocks.forEach(function(block) {
-                self.setDate(getDateFromTaskBlock(block));
+                self.setDate(getDateFromItemBlock(block));
             });
         }
     }
@@ -112,71 +112,78 @@
     function dateToString(date) {
         return date.getFullYear() + '-' + td(date.getMonth() + 1) + '-' + td(date.getDate());
     }
-
-    // Check whether task id can be found in link
-    function isTask(possibleTask) {
-        return possibleTask.href.match(/\/([TD][0-9]+|r[a-zA-Z0-9]+)$/);
+    
+    // Escape special regex characters in string
+    function escapeRegExp(str) {
+        return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
     }
 
-    // Match link and extract task id - e.g. T123
-    function getTaskId(task) {
-        return task.href.match(/\/([TD][0-9]+|r[a-zA-Z0-9]+)$/)[1];
+    // Match link and extract item id - e.g. T123
+    function getItemId(item) {
+        var regexString = '^' + escapeRegExp(window.location.origin) + '\/(.+)$';
+        var match = item.href.match(new RegExp(regexString));
+        if (match && match.length === 2) {
+            return match[1];
+        } else {
+            console.log('could not match \'' + item.href + '\' with \'' + regexString + '\': ' + match);
+            return undefined;
+        }
     }
 
-    // Claim up the hierarchy until a list item is reached and declare this as the task block
+    // Climb up the hierarchy until a list item is reached and declare this as the item block
     // If body is reached return null
-    function getTaskBlock(task) {
-        var taskBlock = task;
+    function getItemBlock(item) {
+        var itemBlock = item;
 
-        while (taskBlock.nodeName !== 'LI') {
-            if (taskBlock == document.body) {
+        while (itemBlock.nodeName !== 'LI') {
+            if (itemBlock == document.body) {
                 return null;
             }
 
-            taskBlock = taskBlock.parentNode;
+            itemBlock = itemBlock.parentNode;
         }
 
-        return taskBlock;
+        return itemBlock;
     }
 
-    // If not overwritten by flat task is hidden completely
-    // On override task is marked with a color and otherwise displayed normally
-    function filterTaskBlock(taskBlock, task) {
+    // If not overwritten by flat item is hidden completely
+    // On override item is marked with a color and otherwise displayed normally
+    function filterItemBlock(itemBlock, item) {
         if (snoozeOverrideShow) {
-            taskBlock.style.backgroundColor = 'rgb(255, 255, ' + Math.round(Math.max(200 - 7 * (task.date - new Date()) / (1000 * 60 * 60 * 24), 50)) + ')';
-            taskBlock.style.display = '';
+            itemBlock.style.backgroundColor = 'rgb(255, 255, ' + Math.round(Math.max(200 - 7 * (item.date - new Date()) / (1000 * 60 * 60 * 24), 50)) + ')';
+            itemBlock.style.display = '';
         } else {
-            taskBlock.style.display = 'none';
+            itemBlock.style.display = 'none';
         }
     }
 
-    // Revert changes introduced by task filter
-    function unfilterTaskBlock(taskBlock) {
-        taskBlock.style.display = '';
-        taskBlock.style.backgroundColor = '';
+    // Revert changes introduced by item filter
+    function unfilterItemBlock(itemBlock) {
+        itemBlock.style.display = '';
+        itemBlock.style.backgroundColor = '';
     }
 
-    // Properly style task blocks by snoozed status
-    function updateTaskBlock(task, block) {
-        if (task.date > new Date()) {
-            filterTaskBlock(block, task);
+    // Properly style item blocks by snoozed status
+    function updateItemBlock(item, block) {
+        if (item.date > new Date()) {
+            filterItemBlock(block, item);
         } else {
-            unfilterTaskBlock(block);
+            unfilterItemBlock(block);
         }
 
-        setDateToTaskBlock(block, task.date);
+        setDateToItemBlock(block, item.date);
     }
 
     // Add snooze buttons in action blocks on right side
-    function addSnoozeButton(taskBlock, task) {
-        var actionsBlocks = taskBlock.getElementsByClassName('phui-object-item-actions');
+    function addSnoozeButton(itemBlock, item) {
+        var actionsBlocks = itemBlock.getElementsByClassName('phui-object-item-actions');
         var actionsBlock;
 
         // Check if an action block exists otherwise create one
         if (actionsBlocks.length == 1) {
             actionsBlock = actionsBlocks[0];
         } else {
-            var frame = taskBlock.firstChild;
+            var frame = itemBlock.firstChild;
 
             if (frame.childNodes.length == 1) {
                 actionsBlock = document.createElement('UL');
@@ -186,9 +193,9 @@
         }
 
         // If still untouched add button and datepicker magic
-        if (actionsBlock.childNodes.length === 0 || actionsBlock.childNodes.length == 2) {
-            // Add task block only once
-            task.addBlock(taskBlock);
+        if (actionsBlock.getElementsByClassName('fa-clock-o').length === 0) {
+            // Add item block only once
+            item.addBlock(itemBlock);
 
             var itemNode = document.createElement('LI');
             itemNode.classList.add('phui-list-item-view');
@@ -198,7 +205,7 @@
 
             // Date value is read and written by datepicker
             var dateInput = document.createElement('INPUT');
-            dateInput.value = dateToString(task.date);
+            dateInput.value = dateToString(item.date);
             dateInput.type = 'hidden';
             dateInput.classList.add('date-input');
             dateInput.dataset.sigil = 'date-input';
@@ -218,66 +225,61 @@
             itemNode.appendChild(linkNode);
             actionsBlock.appendChild(itemNode);
 
-            updateTaskBlock(task, taskBlock);
+            updateItemBlock(item, itemBlock);
         }
 
         // Correct right offset for other items
         if (actionsBlock.offsetWidth > 0) {
-            taskBlock.getElementsByClassName('phui-object-item-content-box')[0].style.marginRight = (actionsBlock.offsetWidth + 6) + 'px';
+            itemBlock.getElementsByClassName('phui-object-item-content-box')[0].style.marginRight = (actionsBlock.offsetWidth + 6) + 'px';
         }
     }
 
-    function getDateFromTaskBlock(taskBlock) {
-        return new Date(taskBlock.getElementsByClassName('date-input')[0].value);
+    function getDateFromItemBlock(itemBlock) {
+        return new Date(itemBlock.getElementsByClassName('date-input')[0].value);
     }
 
-    function setDateToTaskBlock(taskBlock, date) {
-        taskBlock.getElementsByClassName('date-input')[0].value = dateToString(date);
+    function setDateToItemBlock(itemBlock, date) {
+        itemBlock.getElementsByClassName('date-input')[0].value = dateToString(date);
     }
 
-    function updateTaskCounter() {
-        // Show total count of snoozed tasks near top icon
+    function updateItemCounter() {
+        // Show total count of snoozed items near top icon
         document.getElementById('snoozedCounter').innerHTML = snoozedCount;
     }
 
-    // Refresh list of tasks
-    function seekTasks() {
+    // Refresh list of items
+    function seekItems() {
         Array.prototype.forEach.call(
             document.getElementsByClassName('phui-object-item-link'),
-            function(taskItem) {
-                if (!isTask(taskItem)) {
+            function(itemItem) {
+                var itemBlock = getItemBlock(itemItem);
+                if (itemBlock === null) {
                     return;
                 }
 
-                var taskBlock = getTaskBlock(taskItem);
-                if (taskBlock === null) {
-                    return;
-
+                // Get item object
+                var itemId = getItemId(itemItem);
+                var item = items.get(itemId);
+                if (item === undefined) {
+                    item = new Item(itemId);
+                    items.set(itemId, item);
                 }
 
-                // Get task object
-                var taskId = getTaskId(taskItem);
-                var task = tasks.get(taskId);
-                if (task === undefined) {
-                    task = new Task(taskId);
-                    tasks.set(taskId, task);
-                }
-
-                // Take care of task block decoration
-                addSnoozeButton(taskBlock, task);
+                // Take care of item block decoration
+                addSnoozeButton(itemBlock, item);
             }
         );
 
         // Pull values from input fields
-        tasks.forEach(function(task) {
-            task.updateFromBlocks();
+        items.forEach(function(item) {
+            item.updateFromBlocks();
         });
     }
 
     // Listen for DOM changes for very fast updates
-    function taskObserver() {
+    function itemObserver() {
         var observer = new MutationObserver(function(mutations) {
-            seekTasks();
+            seekItems();
         });
 
         observer.observe(document.body, {
@@ -288,15 +290,15 @@
     }
 
     // Slow polling as there are still changes which slip through the observer
-    function taskSeeker() {
-        seekTasks();
+    function itemSeeker() {
+        seekItems();
 
-        setTimeout(taskSeeker, 500);
+        setTimeout(itemSeeker, 500);
     }
 
-    function updateAllTaskBlocks() {
-        tasks.forEach(function(task) {
-            task.updateToBlocks();
+    function updateAllItemBlocks() {
+        items.forEach(function(item) {
+            item.updateToBlocks();
         });
     }
 
@@ -333,7 +335,7 @@
                 snoozeToggle.classList.add('alert-unread');
             }
 
-            updateAllTaskBlocks();
+            updateAllItemBlocks();
         };
 
         // Export
@@ -362,9 +364,7 @@
                 reader.onload = function(e) {
                     var data = JSON.parse(e.target.result);
                     for (var key in data) {
-                        if (key.match(/^(T[0-9]+|r[a-zA-Z0-9]+)$/)) {
-                            localStorage.setItem(key, data[key]);
-                        }
+                        localStorage.setItem(key, data[key]);
                     }
                     location.reload();
                 };
@@ -409,8 +409,8 @@
 
         initDatepicker();
 
-        taskSeeker();
-        taskObserver();
+        itemSeeker();
+        itemObserver();
     }
 
     init();

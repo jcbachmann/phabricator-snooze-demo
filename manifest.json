@@ -10,12 +10,12 @@
 	},
 	"content_scripts": [
 		{
-			"matches": [ "https://secure.phabricator.com/" ],
+			"matches": [ "https://secure.phabricator.com/*" ],
 			"js": [ "phabricator-snooze-demo.js" ],
 			"run_at": "document_end"
 		}
 	],
 	"permissions": [
-		"https://secure.phabricator.com/"
+		"https://secure.phabricator.com/*"
 	]
 }
