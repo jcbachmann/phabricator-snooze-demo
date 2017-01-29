@@ -146,11 +146,27 @@
         return itemBlock;
     }
 
+    // Scale past days to hue
+    function daysToHue(days) {
+        var minHue = 0;
+        var maxHue = 200;
+        var minDays = 0;
+        var maxDays = 14;
+        var hue = (maxHue - minHue) * (days - minDays) / (maxDays - minDays) + minHue;
+        return Math.max(minHue, Math.min(hue, maxHue));
+    }
+
     // If not overwritten by flat item is hidden completely
     // On override item is marked with a color and otherwise displayed normally
     function filterItemBlock(itemBlock, item) {
         if (snoozeOverrideShow) {
-            itemBlock.style.backgroundColor = 'rgb(255, 255, ' + Math.round(Math.max(200 - 7 * (item.date - new Date()) / (1000 * 60 * 60 * 24), 50)) + ')';
+            var snoozeItems = itemBlock.getElementsByClassName('snooze-link');
+            if (snoozeItems.length > 0) {
+                var days = Math.ceil((item.date - new Date()) / (1000 * 60 * 60 * 24));
+                snoozeItems[0].style.backgroundColor = 'hsl(' + daysToHue(days) + ',100%,30%)';
+                snoozeItems[0].style.color = 'white';
+                snoozeItems[0].innerHTML = '<span class="visual-only phui-icon-view phui-font-fa fa-clock-o phui-list-item-icon" style="color:white;" aria-hidden="true"></span><div style="font-size:8pt;text-align:center;position:absolute;width:100%;padding-top:3px;">+' + days + '</div>';
+            }
             itemBlock.style.display = '';
         } else {
             itemBlock.style.display = 'none';
@@ -219,7 +235,9 @@
 
             var linkNode = document.createElement('A');
             linkNode.classList.add('phui-list-item-href');
+            linkNode.classList.add('snooze-link');
             linkNode.dataset.sigil = 'calendar-button';
+            linkNode.style.borderRadius = '3px';
             linkNode.innerHTML = '<span class="visual-only phui-icon-view phui-font-fa fa-clock-o phui-list-item-icon" aria-hidden="true"></span>';
 
             itemNode.appendChild(linkNode);
