@@ -192,7 +192,7 @@
 
     // Add snooze buttons in action blocks on right side
     function addSnoozeButton(itemBlock, item) {
-        var actionsBlocks = itemBlock.getElementsByClassName('phui-object-item-actions');
+        var actionsBlocks = itemBlock.getElementsByClassName('phui-oi-actions');
         var actionsBlock;
 
         // Check if an action block exists otherwise create one
@@ -203,7 +203,7 @@
 
             if (frame.childNodes.length == 1) {
                 actionsBlock = document.createElement('UL');
-                actionsBlock.classList.add('phui-object-item-actions');
+                actionsBlock.classList.add('phui-oi-actions');
                 frame.appendChild(actionsBlock);
             }
         }
@@ -248,7 +248,7 @@
 
         // Correct right offset for other items
         if (actionsBlock.offsetWidth > 0) {
-            itemBlock.getElementsByClassName('phui-object-item-content-box')[0].style.marginRight = (actionsBlock.offsetWidth + 6) + 'px';
+            itemBlock.getElementsByClassName('phui-oi-content-box')[0].style.marginRight = (actionsBlock.offsetWidth + 6) + 'px';
         }
     }
 
@@ -268,7 +268,7 @@
     // Refresh list of items
     function seekItems() {
         Array.prototype.forEach.call(
-            document.getElementsByClassName('phui-object-item-link'),
+            document.getElementsByClassName('phui-oi-link'),
             function(itemItem) {
                 var itemBlock = getItemBlock(itemItem);
                 if (itemBlock === null) {
