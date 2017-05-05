@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Phabricator Snooze Demo
 // @namespace    https://www.jcbachmann.com
-// @version      1.1
+// @version      1.2
 // @description  Enables snoozing of items on Phabricator interface using local Browser storage
 // @author       J&C Bachmann GmbH
 // @match        https://secure.phabricator.com/*
