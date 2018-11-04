@@ -1,7 +1,7 @@
 {
 	"manifest_version": 2,
 	"name": "Phabricator Snooze Demo",
-	"version": "1.2",
+	"version": "1.3",
 	"description": "Enables snoozing of tasks and audits on Phabricator dashboard using local Browser storage",
 	"icons": {
 		"16": "icon16.png",
