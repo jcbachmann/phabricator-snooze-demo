@@ -411,7 +411,7 @@
             // Link date picker some time after javascript file is loaded
             var initDatepickerScript = document.createElement('SCRIPT');
             initDatepickerScript.type = 'text/javascript';
-            initDatepickerScript.innerHTML = "JX.initBehaviors({ 'fancy-datepicker' : [{ format: 'Y-m-d', weekStart: 1 }] });";
+	        initDatepickerScript.src = chrome.runtime.getURL('init-datepicker.js');
             document.body.appendChild(initDatepickerScript);
         };
         document.body.appendChild(datepickerScript);
